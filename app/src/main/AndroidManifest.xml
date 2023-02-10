@@ -14,9 +14,11 @@
         android:theme="@style/Theme.GroTrack"
         tools:targetApi="31">
         <activity
+            android:name=".AddGroceriesActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.GroTrack.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

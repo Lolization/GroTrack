@@ -1,5 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="add">add</string>
+    <string name="name">Name</string>
+    <string name="count">Count</string>
+    <string name="location">Location (Optional)</string>
     <string name="app_name">GroTrack</string>
-    <string name="tab_text_1">Tab 1</string>
-    <string name="tab_text_2">Tab 2</string>
 </resources>
