@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 
         // Handle Firebase connection
         database =
-            FirebaseDatabase.getInstance("https://grotrack-dfa66-default-rtdb.europe-west1.firebasedatabase.app")
+            FirebaseDatabase.getInstance(Consts.DATABASE_URL)
         Log.d(Consts.TAG, "Value is: $database")
         groceriesRef = database.getReference("Groceries")
         Log.d(Consts.TAG, "Value is: $groceriesRef")
