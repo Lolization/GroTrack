@@ -18,6 +18,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_gravity="center"
+            android:gravity="center"
             android:text="TextView"
             android:textSize="24sp" />
 
@@ -26,6 +28,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_gravity="center"
             android:gravity="center"
             android:text="TextView"
             android:textSize="24sp" />
@@ -35,8 +38,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_gravity="center"
             android:gravity="center"
             android:text="TextView"
             android:textSize="24sp" />
+
+        <ImageButton
+            android:id="@+id/ib_remove"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1.25"
+            android:background="@drawable/small_trash_icon"
+            android:contentDescription="Trash" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

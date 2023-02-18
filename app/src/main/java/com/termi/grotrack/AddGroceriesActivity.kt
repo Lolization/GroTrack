@@ -29,7 +29,7 @@ class AddGroceriesActivity : AppCompatActivity() {
             val location: String = etLocation.text.toString().ifBlank { "Unknown" }
 
             if (name.isBlank() || count == null) {
-                Snackbar.make(it, "Missing name or count", Snackbar.LENGTH_LONG).show()
+                Snackbar.make(it, "Missing name or count", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 

@@ -1,14 +1,18 @@
 package com.termi.grotrack
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class GroceryAdapter(private val mList: List<Grocery>) :
     RecyclerView.Adapter<GroceryAdapter.ViewHolder>() {
+
+    private var onItemClick: ((Grocery) -> Unit)? = null
+    private var onItemRemoveClick: ((Grocery) -> Unit)? = null
+
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         // inflates the card_view_design view
@@ -21,15 +25,20 @@ class GroceryAdapter(private val mList: List<Grocery>) :
 
     // binds the list items to a view
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-
         val grocery = mList[position]
 
         // sets the text to the textview from our itemHolder class
         holder.tvName.text = grocery.name
         holder.tvCount.text = grocery.count.toString()
-        Log.d(Consts.TAG, "LOCATION: ${grocery.location}")
         holder.tvLocation.text = grocery.location
+    }
 
+    fun setOnItemClickListener(listener: (Grocery) -> Unit) {
+        onItemClick = listener
+    }
+
+    fun setOnItemRemoveClickListener(listener: (Grocery) -> Unit) {
+        onItemRemoveClick = listener
     }
 
     // return the number of the items in the list
@@ -38,9 +47,21 @@ class GroceryAdapter(private val mList: List<Grocery>) :
     }
 
     // Holds the views for adding it to image and text
-    class ViewHolder(ItemView: View) : RecyclerView.ViewHolder(ItemView) {
+    inner class ViewHolder(ItemView: View) : RecyclerView.ViewHolder(ItemView) {
         val tvName: TextView = itemView.findViewById(R.id.tv_name)
         val tvCount: TextView = itemView.findViewById(R.id.tv_count)
         val tvLocation: TextView = itemView.findViewById(R.id.tv_location)
+
+        private val ibRemoveItem: ImageButton = itemView.findViewById(R.id.ib_remove)
+
+        init {
+            itemView.setOnClickListener {
+                onItemClick?.invoke(mList[adapterPosition])
+            }
+
+            ibRemoveItem.setOnClickListener {
+                onItemRemoveClick?.invoke(mList[adapterPosition])
+            }
+        }
     }
 }

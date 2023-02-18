@@ -1,10 +1,12 @@
 package com.termi.grotrack
 
+import android.content.DialogInterface
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -47,8 +49,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Handle Firebase connection
-        database =
-            FirebaseDatabase.getInstance(Consts.DATABASE_URL)
+        database = FirebaseDatabase.getInstance(Consts.DATABASE_URL)
         Log.d(Consts.TAG, "Value is: $database")
         groceriesRef = database.getReference("Groceries")
         Log.d(Consts.TAG, "Value is: $groceriesRef")
@@ -67,11 +68,34 @@ class MainActivity : AppCompatActivity() {
                 Log.w(Consts.TAG, "Failed to read value.", error.toException())
             }
         })
+
+        rvAdapter.setOnItemClickListener {
+            Toast.makeText(applicationContext, "Got grocery click ${it.name}", Toast.LENGTH_SHORT).show()
+            // TODO: Make popup to edit or delete an item
+        }
+
+        rvAdapter.setOnItemRemoveClickListener {
+            // Show a confirm dialogue, and then delete
+            AlertDialog.Builder(this)
+                .setTitle("Delete")
+                .setMessage("Are you sure you want to delete ${it.name}?")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    val groceryToRemove = groceriesRef.child(it.name)
+                    groceryToRemove.removeValue().addOnSuccessListener { _ ->
+                        Toast.makeText(applicationContext, "Removed ${it.name}!", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+
+        }
     }
 
     private fun loadDataFromSnapshot(dataSnapshot: DataSnapshot) {
-        Log.d(Consts.TAG, "Data add / change")
-        Toast.makeText(applicationContext, "Data updated :)", Toast.LENGTH_LONG).show()
+        Log.d(Consts.TAG, "Reloaded data!")
+        Toast.makeText(applicationContext, "Data updated :)", Toast.LENGTH_SHORT).show()
 
         groceries.clear()  // Clear all data
 
