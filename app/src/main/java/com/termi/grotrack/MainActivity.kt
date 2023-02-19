@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fabAddTask: FloatingActionButton
 
     private val groceries: ArrayList<Grocery> = ArrayList()
+    private val allLocations: ArrayList<String> = ArrayList()
     private lateinit var rvAdapter: GroceryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 
         fabAddTask.setOnClickListener {
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
+            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
             startActivityForResult(intent, Consts.ADD_GROCERY_REQ_CODE)
         }
 
@@ -73,6 +75,7 @@ class MainActivity : AppCompatActivity() {
 
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
             intent.putExtra("grocery", it)
+            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
             startActivityForResult(intent, Consts.EDIT_GROCERY_REQ_CODE)
         }
 
@@ -104,6 +107,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(applicationContext, "Data updated :)", Toast.LENGTH_SHORT).show()
 
         groceries.clear()  // Clear all data
+        allLocations.clear()
 
         dataSnapshot.children.forEach {
             try {
@@ -123,6 +127,7 @@ class MainActivity : AppCompatActivity() {
 
                 val count: Long = objectData["Count"] as Long
                 val location: String = objectData["Location"] as String
+                allLocations.add(location)
 
                 val grocery = Grocery(name, count, location)
                 Log.d(Consts.TAG, "Got Grocery $name:$count:$location")

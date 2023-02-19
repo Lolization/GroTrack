@@ -3,15 +3,14 @@ package com.termi.grotrack
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
+import android.widget.*
 import com.google.android.material.snackbar.Snackbar
 
 class AddGroceriesActivity : AppCompatActivity() {
 
     private lateinit var etName: EditText
     private lateinit var etCount: EditText
-    private lateinit var etLocation: EditText
+    private lateinit var actvLocation: AutoCompleteTextView
     private lateinit var btnAdd: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,7 +19,7 @@ class AddGroceriesActivity : AppCompatActivity() {
 
         etName = findViewById(R.id.et_name)
         etCount = findViewById(R.id.et_count)
-        etLocation = findViewById(R.id.et_location)
+        actvLocation = findViewById(R.id.et_location)
         btnAdd = findViewById(R.id.btn_add)
 
         intent.getSerializableExtra("grocery")?.let {
@@ -28,13 +27,22 @@ class AddGroceriesActivity : AppCompatActivity() {
 
             etName.setText(grocery.name)
             etCount.setText(grocery.count.toString())
-            etLocation.setText(grocery.location)
+            actvLocation.setText(grocery.location)
+        }
+
+        intent.getStringArrayListExtra("locations")?.let {
+            // TODO: Yeah? Sending through the intent?
+            // TODO: https://stackoverflow.com/questions/15544943/show-all-items-in-autocompletetextview-without-writing-text
+            Toast.makeText(this, "$it", Toast.LENGTH_SHORT).show()
+            val adapter = ArrayAdapter(this, android.R.layout.select_dialog_item, it.distinct())
+            actvLocation.threshold = 1
+            actvLocation.setAdapter(adapter)
         }
 
         btnAdd.setOnClickListener {
             val name: String = etName.text.toString()
             val count: Long? = etCount.text.toString().toLongOrNull()
-            val location: String = etLocation.text.toString().ifBlank { Consts.LOCATION_UNKNOWN }
+            val location: String = actvLocation.text.toString().ifBlank { Consts.LOCATION_UNKNOWN }
 
             if (name.isBlank() || count == null) {
                 Snackbar.make(it, "Missing name or count", Snackbar.LENGTH_SHORT).show()
