@@ -23,20 +23,28 @@ class AddGroceriesActivity : AppCompatActivity() {
         etLocation = findViewById(R.id.et_location)
         btnAdd = findViewById(R.id.btn_add)
 
+        intent.getSerializableExtra("grocery")?.let {
+            val grocery = it as Grocery
+
+            etName.setText(grocery.name)
+            etCount.setText(grocery.count.toString())
+            etLocation.setText(grocery.location)
+        }
+
         btnAdd.setOnClickListener {
             val name: String = etName.text.toString()
-            val count: Int? = etCount.text.toString().toIntOrNull()
-            val location: String = etLocation.text.toString().ifBlank { "Unknown" }
+            val count: Long? = etCount.text.toString().toLongOrNull()
+            val location: String = etLocation.text.toString().ifBlank { Consts.LOCATION_UNKNOWN }
 
             if (name.isBlank() || count == null) {
                 Snackbar.make(it, "Missing name or count", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            val grocery = Grocery(name, count, location)
+
             val intent = Intent()
-            intent.putExtra("name", name)
-            intent.putExtra("count", count)
-            intent.putExtra("location", location)
+            intent.putExtra("grocery", grocery)
 
 //            Toast.makeText(applicationContext, "Adding $name with count $count", Toast.LENGTH_LONG).show()
             setResult(RESULT_OK, intent)

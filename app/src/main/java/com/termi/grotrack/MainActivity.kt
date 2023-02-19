@@ -45,7 +45,6 @@ class MainActivity : AppCompatActivity() {
         fabAddTask.setOnClickListener {
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
             startActivityForResult(intent, Consts.ADD_GROCERY_REQ_CODE)
-            // TODO: Current grocery list + All groceries + locations
         }
 
         // Handle Firebase connection
@@ -70,8 +69,11 @@ class MainActivity : AppCompatActivity() {
         })
 
         rvAdapter.setOnItemClickListener {
-            Toast.makeText(applicationContext, "Got grocery click ${it.name}", Toast.LENGTH_SHORT).show()
-            // TODO: Make popup to edit or delete an item
+            Toast.makeText(applicationContext, "Editing ${it.name}", Toast.LENGTH_SHORT).show()
+
+            val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
+            intent.putExtra("grocery", it)
+            startActivityForResult(intent, Consts.EDIT_GROCERY_REQ_CODE)
         }
 
         rvAdapter.setOnItemRemoveClickListener {
@@ -83,7 +85,11 @@ class MainActivity : AppCompatActivity() {
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     val groceryToRemove = groceriesRef.child(it.name)
                     groceryToRemove.removeValue().addOnSuccessListener { _ ->
-                        Toast.makeText(applicationContext, "Removed ${it.name}!", Toast.LENGTH_SHORT)
+                        Toast.makeText(
+                            applicationContext,
+                            "Removed ${it.name}!",
+                            Toast.LENGTH_SHORT
+                        )
                             .show()
                     }
                 }
@@ -140,7 +146,6 @@ class MainActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        // TODO: Change to serializable
 
         Log.d(Consts.TAG, "$requestCode")
         Log.d(Consts.TAG, "$resultCode")
@@ -150,37 +155,52 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (!data.hasExtra("name") || !data.hasExtra("count")) {
+        when (requestCode) {
+            Consts.ADD_GROCERY_REQ_CODE, Consts.EDIT_GROCERY_REQ_CODE -> addGrocery(data)
+//            Consts.EDIT_GROCERY_REQ_CODE -> editGrocery(data)
+        }
+    }
+
+    private fun addGrocery(data: Intent) {
+        if (!data.hasExtra("grocery")) {
             Log.d(Consts.TAG, "Not from AddGroceries!")
+            Toast.makeText(
+                this,
+                "Failed to update!",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
-        val name: String = data.getStringExtra("name")!!
-        val count: Int = data.getIntExtra("count", -1)
-        val location: String = data.getStringExtra("location")!!
-        val groceryRef = groceriesRef.child(name)
+        data.getSerializableExtra("grocery")?.let {
+            val grocery = it as Grocery
 
-        val grocery = mapOf(
-            "Count" to count,
-            "Location" to location
-        )
+            val name: String = grocery.name
+            val count: Long = grocery.count
+            val location: String = grocery.location
 
-        Log.d(Consts.TAG, "Got name of $name")
-        Log.d(Consts.TAG, "Got count of $count")
-        Log.d(Consts.TAG, "Got location of $location")
+            val groceryRef = groceriesRef.child(name)
 
-        groceryRef.updateChildren(grocery).addOnSuccessListener {
-            // Updated children!
-            Toast.makeText(
-                this,
-                "Updated new grocery (name=$name, count=$count, location=$location",
-                Toast.LENGTH_SHORT
-            ).show()
-        }.addOnFailureListener {
-            Toast.makeText(this, "Could not update :(((", Toast.LENGTH_SHORT).show()
+            val groceryObj = mapOf(
+                "Count" to count,
+                "Location" to location
+            )
 
+            Log.v(Consts.TAG, "Got name of $name")
+            Log.v(Consts.TAG, "Got count of $count")
+            Log.v(Consts.TAG, "Got location of $location")
+
+            groceryRef.updateChildren(groceryObj).addOnSuccessListener {
+                // Updated children!
+                Toast.makeText(
+                    this,
+                    "Updated (name=$name, count=$count, location=$location",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }.addOnFailureListener {
+                Toast.makeText(this, "Could not update :(((", Toast.LENGTH_SHORT).show()
+
+            }
         }
-
-//        groceryRef.setValue(count)
     }
 }
