@@ -1,11 +1,14 @@
 package com.termi.grotrack
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -13,7 +16,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.getValue
 
-class MainActivity : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
 
     private lateinit var database: FirebaseDatabase
     private lateinit var groceriesRef: DatabaseReference
@@ -22,8 +26,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fabAddTask: FloatingActionButton
     private lateinit var fabShoppingList: FloatingActionButton
 
-    private val groceries: ArrayList<Grocery> = ArrayList()
-    private val allLocations: ArrayList<String> = ArrayList()
+    private val groceries: ArrayList<Grocery> = ArrayList() // TODO: Sorted list?
+    private val allLocations: MutableSet<String> = mutableSetOf()
     private lateinit var rvAdapter: GroceryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +48,10 @@ class MainActivity : AppCompatActivity() {
         fabAddTask = findViewById(R.id.fab_add_task)
         fabAddTask.setOnClickListener {
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
-            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
+            intent.putStringArrayListExtra(
+                "locations",
+                allLocations.toList() as ArrayList
+            )  // Make the whole intent thing in a function
             startActivityForResult(intent, Consts.ADD_GROCERY_REQ_CODE)
         }
 
@@ -80,7 +87,10 @@ class MainActivity : AppCompatActivity() {
 
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
             intent.putExtra("grocery", it)
-            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
+            intent.putStringArrayListExtra(
+                "locations",
+                allLocations.toList() as ArrayList
+            )  // Make the whole intent thing in a function
             startActivityForResult(intent, Consts.EDIT_GROCERY_REQ_CODE)
         }
 
@@ -107,6 +117,35 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.filter_items, menu)
+        val searchItem: MenuItem = menu.findItem(R.id.action_search)
+        val searchView: SearchView = searchItem.actionView as SearchView
+        searchView.setOnQueryTextListener(this)
+        return true
+    }
+
+    override fun onQueryTextChange(query: String?): Boolean {
+        // Here is where we are going to implement the filter logic
+        if (query == null || query.isBlank()) {
+            // No filter
+            updateRecyclerView(groceries)
+            return false
+        }
+
+        val filter: String = query.trim()
+        val filteredGroceries: List<Grocery> =
+            groceries.filter { it.name.lowercase().contains(filter.lowercase()) }
+        rvAdapter.replaceData(filteredGroceries)
+        rvGroceries.scrollToPosition(0)
+        updateRecyclerView(filteredGroceries)
+        return false
+    }
+
+    override fun onQueryTextSubmit(query: String?): Boolean {
+        return false
+    }
+
     private fun loadDataFromSnapshot(dataSnapshot: DataSnapshot) {
         Log.d(Consts.TAG, "Reloaded data!")
         Toast.makeText(applicationContext, "Data updated :)", Toast.LENGTH_SHORT).show()
@@ -124,14 +163,14 @@ class MainActivity : AppCompatActivity() {
 
                 Log.d(Consts.TAG, "Got object data $objectData")
 
-                val name: String? = it.key
+                val name: String? = it.key?.trim()
                 if (name == null) {
                     Log.e(Consts.TAG, "no key?")
                     return@forEach
                 }
 
                 val count: Long = objectData["Count"] as Long
-                val location: String = objectData["Location"] as String
+                val location: String = (objectData["Location"] as String).trim()
                 allLocations.add(location)
 
                 val grocery = Grocery(name, count, location)
@@ -142,14 +181,12 @@ class MainActivity : AppCompatActivity() {
                 Log.d(Consts.TAG, "Failed to fetch $it")
             }
         }
-        updateRecyclerView()
+        updateRecyclerView(groceries)
     }
 
-    private fun updateRecyclerView() {
-//        rvGroceries.adapter = rvAdapter
-        // Do you need groceries?
-        rvAdapter.notifyDataSetChanged()
-        Log.d(Consts.TAG, "Groceries ${groceries.size}::$groceries")
+    private fun updateRecyclerView(newGroceries: List<Grocery>) {
+        rvAdapter.replaceData(newGroceries)
+        rvAdapter.notifyDataSetChanged()  // TODO: Go over data and do notify remove
 
     }
 
@@ -185,9 +222,9 @@ class MainActivity : AppCompatActivity() {
         data.getSerializableExtra("grocery")?.let {
             val grocery = it as Grocery
 
-            val name: String = grocery.name
+            val name: String = grocery.name.trim()
             val count: Long = grocery.count
-            val location: String = grocery.location
+            val location: String = grocery.location.trim()
 
             val groceryRef = groceriesRef.child(name)
 

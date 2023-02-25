@@ -1,8 +1,10 @@
 package com.termi.grotrack
 
 import android.content.Intent
+import android.opengl.Visibility
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import com.google.android.material.snackbar.Snackbar
 
@@ -33,10 +35,15 @@ class AddGroceriesActivity : AppCompatActivity() {
         intent.getStringArrayListExtra("locations")?.let {
             // TODO: Yeah? Sending through the intent?
             // TODO: https://stackoverflow.com/questions/15544943/show-all-items-in-autocompletetextview-without-writing-text
-            Toast.makeText(this, "$it", Toast.LENGTH_SHORT).show()
             val adapter = ArrayAdapter(this, android.R.layout.select_dialog_item, it.distinct())
             actvLocation.threshold = 1
             actvLocation.setAdapter(adapter)
+        }
+
+        intent.getBooleanExtra("showLocation", true).let {
+            if (!it) {
+                actvLocation.visibility = View.GONE
+            }
         }
 
         btnAdd.setOnClickListener {

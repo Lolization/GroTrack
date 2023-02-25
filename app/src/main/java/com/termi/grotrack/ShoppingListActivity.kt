@@ -8,6 +8,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -15,7 +16,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.getValue
 
-class ShoppingListActivity : AppCompatActivity() {
+class ShoppingListActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
 
     private lateinit var database: FirebaseDatabase
     private lateinit var shoppingRef: DatabaseReference
@@ -44,7 +45,8 @@ class ShoppingListActivity : AppCompatActivity() {
         fabAddTask = findViewById(R.id.fab_add_task)
         fabAddTask.setOnClickListener {
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
-//            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
+
+            intent.putExtra("showLocation", false)
             startActivityForResult(intent, Consts.ADD_GROCERY_REQ_CODE)
         }
 
@@ -74,6 +76,7 @@ class ShoppingListActivity : AppCompatActivity() {
 
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
             intent.putExtra("grocery", it)
+            intent.putExtra("showLocation", false)
 //            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
             startActivityForResult(intent, Consts.EDIT_GROCERY_REQ_CODE)
         }
@@ -101,18 +104,33 @@ class ShoppingListActivity : AppCompatActivity() {
         }
     }
 
-//    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-//        menuInflater.inflate(R.menu.filter_items, menu)
-//        return true;
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-//        R.id.action_search -> {
-//            // do stuff
-//            true
-//        }
-//        else -> super.onOptionsItemSelected(item)
-//    }
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.filter_items, menu)
+        val searchItem: MenuItem = menu.findItem(R.id.action_search)
+        val searchView: SearchView = searchItem.actionView as SearchView
+        searchView.setOnQueryTextListener(this)
+        return true
+    }
+
+    override fun onQueryTextChange(query: String?): Boolean {
+        // Here is where we are going to implement the filter logic
+        if (query == null || query.isBlank()) {
+            // No filter
+            updateRecyclerView(shopping)
+            return false
+        }
+
+        val filter: String = query.trim()
+        val filteredGroceries: List<Grocery> =
+            shopping.filter { it.name.lowercase().contains(filter.lowercase()) }
+        updateRecyclerView(filteredGroceries)
+        rvGroceries.scrollToPosition(0)
+        return false
+    }
+
+    override fun onQueryTextSubmit(query: String?): Boolean {
+        return false
+    }
 
     private fun loadDataFromSnapshot(dataSnapshot: DataSnapshot) {
         Log.d(Consts.TAG, "Reloaded data!")
@@ -128,7 +146,7 @@ class ShoppingListActivity : AppCompatActivity() {
 
                 Log.d(Consts.TAG, "Got object data $objectData")
 
-                val name: String? = it.key
+                val name: String? = it.key?.trim()
                 if (name == null) {
                     Log.e(Consts.TAG, "no key?")
                     return@forEach
@@ -144,12 +162,11 @@ class ShoppingListActivity : AppCompatActivity() {
                 Log.d(Consts.TAG, "Failed to fetch $it:: $de")
             }
         }
-        updateRecyclerView()
+        updateRecyclerView(shopping)
     }
 
-    private fun updateRecyclerView() {
-//        rvGroceries.adapter = rvAdapter
-        // Do you need groceries?
+    private fun updateRecyclerView(newGroceries: List<Grocery>) {
+        rvAdapter.replaceData(newGroceries)
         rvAdapter.notifyDataSetChanged()
         Log.d(Consts.TAG, "Groceries ${shopping.size}::$shopping")
 
@@ -187,7 +204,7 @@ class ShoppingListActivity : AppCompatActivity() {
         data.getSerializableExtra("grocery")?.let {
             val grocery = it as Grocery
 
-            val name: String = grocery.name
+            val name: String = grocery.name.trim()
             val count: Long = grocery.count
 
             val groceryRef = shoppingRef.child(name)
