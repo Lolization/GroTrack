@@ -4,6 +4,8 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -13,22 +15,20 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.getValue
 
-class MainActivity : AppCompatActivity() {
+class ShoppingListActivity : AppCompatActivity() {
 
     private lateinit var database: FirebaseDatabase
-    private lateinit var groceriesRef: DatabaseReference
+    private lateinit var shoppingRef: DatabaseReference
 
     private lateinit var rvGroceries: RecyclerView
     private lateinit var fabAddTask: FloatingActionButton
-    private lateinit var fabShoppingList: FloatingActionButton
 
-    private val groceries: ArrayList<Grocery> = ArrayList()
-    private val allLocations: ArrayList<String> = ArrayList()
-    private lateinit var rvAdapter: GroceryAdapter
+    private val shopping: ArrayList<Grocery> = ArrayList()
+    private lateinit var rvAdapter: ShoppingAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_shopping_list)
 
         rvGroceries = findViewById(R.id.rv_groceries)
         val linearLayoutManager = LinearLayoutManager(applicationContext)
@@ -38,30 +38,24 @@ class MainActivity : AppCompatActivity() {
         rvGroceries.layoutManager = linearLayoutManager
         rvGroceries.addItemDecoration(dividerItemDecoration)
 
-        rvAdapter = GroceryAdapter(groceries)
+        rvAdapter = ShoppingAdapter(shopping)
         rvGroceries.adapter = rvAdapter
 
         fabAddTask = findViewById(R.id.fab_add_task)
         fabAddTask.setOnClickListener {
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
-            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
+//            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
             startActivityForResult(intent, Consts.ADD_GROCERY_REQ_CODE)
-        }
-
-        fabShoppingList = findViewById(R.id.fab_shopping_list)
-        fabShoppingList.setOnClickListener {
-            val intent = Intent(applicationContext, ShoppingListActivity::class.java)
-            startActivity(intent)
         }
 
         // Handle Firebase connection
         database = FirebaseDatabase.getInstance(Consts.DATABASE_URL)
         Log.d(Consts.TAG, "Value is: $database")
-        groceriesRef = database.getReference("Groceries")
-        Log.d(Consts.TAG, "Value is: $groceriesRef")
+        shoppingRef = database.getReference("Shopping")
+        Log.d(Consts.TAG, "Value is: $shoppingRef")
 
         // Read from the database
-        groceriesRef.addValueEventListener(object : ValueEventListener {
+        shoppingRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 // This method is called once with the initial value and again
                 // whenever data at this location is updated.
@@ -80,7 +74,7 @@ class MainActivity : AppCompatActivity() {
 
             val intent = Intent(applicationContext, AddGroceriesActivity::class.java)
             intent.putExtra("grocery", it)
-            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
+//            intent.putStringArrayListExtra("locations", allLocations)  // Make the whole intent thing in a function
             startActivityForResult(intent, Consts.EDIT_GROCERY_REQ_CODE)
         }
 
@@ -91,7 +85,7 @@ class MainActivity : AppCompatActivity() {
                 .setMessage("Are you sure you want to delete ${it.name}?")
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                    val groceryToRemove = groceriesRef.child(it.name)
+                    val groceryToRemove = shoppingRef.child(it.name)
                     groceryToRemove.removeValue().addOnSuccessListener { _ ->
                         Toast.makeText(
                             applicationContext,
@@ -107,12 +101,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+//    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+//        menuInflater.inflate(R.menu.filter_items, menu)
+//        return true;
+//    }
+//
+//    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+//        R.id.action_search -> {
+//            // do stuff
+//            true
+//        }
+//        else -> super.onOptionsItemSelected(item)
+//    }
+
     private fun loadDataFromSnapshot(dataSnapshot: DataSnapshot) {
         Log.d(Consts.TAG, "Reloaded data!")
         Toast.makeText(applicationContext, "Data updated :)", Toast.LENGTH_SHORT).show()
-
-        groceries.clear()  // Clear all data
-        allLocations.clear()
 
         dataSnapshot.children.forEach {
             try {
@@ -131,15 +135,13 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val count: Long = objectData["Count"] as Long
-                val location: String = objectData["Location"] as String
-                allLocations.add(location)
 
-                val grocery = Grocery(name, count, location)
-                Log.d(Consts.TAG, "Got Grocery $name:$count:$location")
-                groceries.add(grocery)
+                val grocery = Grocery(name, count)
+                Log.d(Consts.TAG, "Got Grocery $name:$count")
+                shopping.add(grocery)
 
             } catch (de: DatabaseException) {
-                Log.d(Consts.TAG, "Failed to fetch $it")
+                Log.d(Consts.TAG, "Failed to fetch $it:: $de")
             }
         }
         updateRecyclerView()
@@ -149,7 +151,7 @@ class MainActivity : AppCompatActivity() {
 //        rvGroceries.adapter = rvAdapter
         // Do you need groceries?
         rvAdapter.notifyDataSetChanged()
-        Log.d(Consts.TAG, "Groceries ${groceries.size}::$groceries")
+        Log.d(Consts.TAG, "Groceries ${shopping.size}::$shopping")
 
     }
 
@@ -187,24 +189,21 @@ class MainActivity : AppCompatActivity() {
 
             val name: String = grocery.name
             val count: Long = grocery.count
-            val location: String = grocery.location
 
-            val groceryRef = groceriesRef.child(name)
+            val groceryRef = shoppingRef.child(name)
 
             val groceryObj = mapOf(
                 "Count" to count,
-                "Location" to location
             )
 
             Log.v(Consts.TAG, "Got name of $name")
             Log.v(Consts.TAG, "Got count of $count")
-            Log.v(Consts.TAG, "Got location of $location")
 
             groceryRef.updateChildren(groceryObj).addOnSuccessListener {
                 // Updated children!
                 Toast.makeText(
                     this,
-                    "Updated (name=$name, count=$count, location=$location",
+                    "Updated (name=$name, count=$count",
                     Toast.LENGTH_SHORT
                 ).show()
             }.addOnFailureListener {
